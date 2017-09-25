@@ -118,7 +118,6 @@ print(Y.shape)
 # plt.ylabel('some numbers')
 # plt.show()
 
-
 hiddenLayerCount = 1
 
 layerSizes = [X.shape[1], 100, 40, 4]

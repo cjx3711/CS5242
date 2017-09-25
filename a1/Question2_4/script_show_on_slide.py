@@ -1,5 +1,7 @@
 from __future__ import print_function
 import os
+import sys
+#VERSION = 2 if '2.7' in sys.version else 3
 import numpy as np
 import csv
 import zipfile
@@ -13,9 +15,9 @@ truth_path = 'the_truth_path' #change truth_path = 'b' for verification
 zip_ref = zipfile.ZipFile(ID+'.zip', 'r')
 zip_ref.extractall('.')
 zip_ref.close()
-file_name = ['dw-100-40-4.csv', 'db-100-40-4.csv', 'dw-28*6-4.csv', 'db-28*6-4.csv', 'dw-14*28-4.csv', 'db-14*28-4.csv'] # append 'true-' to the head of these filenames to verify the script works
+file_name = ['dw-100-40-4.csv', 'db-100-40-4.csv', 'dw-28-6-4.csv', 'db-28-6-4.csv', 'dw-14-28-4.csv', 'db-14-28-4.csv'] 
 true_file = ['true-dw-100-40-4.csv', 'true-db-100-40-4.csv', 'true-dw-28*6-4.csv', 'true-db-28*6-4.csv', 'true-dw-14*28-4.csv', 'true-db-14*28-4.csv']
-threshold = 0.1
+threshold = 0.05
 
 def read_file(name):
     l = list()
@@ -30,7 +32,7 @@ def read_file(name):
     However, in the the ideal situation you should expect dis = 0
 """
 def do_some_grading(l0, l1, th):
-    dis = np.sum(np.abs(l0-l1))
+    dis = np.mean(np.abs(l0-l1).astype(float)/(0.1+l1))
     if dis <= th:
         return 1
     else:
