@@ -1,5 +1,5 @@
 import numpy as np 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 
@@ -93,8 +93,24 @@ def forwardProp(model, X):
     return probs
 
 
-def backProp():
-    pass
+def backProp(model, probs, Y):
+    layerCount = len(model['layers'])
+    W = model['W']
+    b = model['b']
+    L = model['L']
+    
+    delta3 = -(Y - probs)
+    dJdW3 = np.dot(L[2].T, delta3)
+    
+    delta2 = np.dot(delta3, W[2].T)
+    dJdW2 = np.dot(L[1].T, delta2)
+    
+    delta1 = np.dot(delta2, W[1].T)
+    dJdW1 = np.dot(L[0].T, delta1)
+    
+    W[0] = W[0] - 0.1 * dJdW1
+    W[1] = W[1] - 0.1 * dJdW2
+    W[2] = W[2] - 0.1 * dJdW3
 
 def costFunction(probs, Y):
     # Cross entropy cost function
