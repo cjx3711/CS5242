@@ -158,12 +158,12 @@ def train(X,Y,testX,testYlayerSizes, filename):
 
         epoches = np.arange(epochCount)
 
-        fig = plt.figure()
-        line1, = plt.plot(epoches, trainErrorPlot, label='Training Error')
-        line2, = plt.plot(epoches, testErrorPlot, label='Testing Error')
-        plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
-        fig.savefig(filename, dpi=fig.dpi)
-
+    fig = plt.figure()
+    line1, = plt.plot(epoches, trainErrorPlot, label='Training Error')
+    line2, = plt.plot(epoches, testErrorPlot, label='Testing Error')
+    plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
+    fig.savefig(filename, dpi=fig.dpi)
+    plt.close()
 
 X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
 y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
@@ -177,7 +177,7 @@ testY = onehot(testy)
 
 train_factor = 0.02
 init_weight = 0.5
-epochCount = 10000
+epochCount = 8000
 
 layerSizes = [X.shape[1], 100, 40, 4]
 train(X,Y,testX,testY, '100-40-0.02.png')
@@ -189,7 +189,7 @@ train(X,Y,testX,testY, '14-28-0.02.png')
 
 train_factor = 0.0001
 init_weight = 0.25
-epochCount = 15000
+epochCount = 12000
 
 layerSizes = [X.shape[1], 100, 40, 4]
 train(X,Y,testX,testY, '100-40-0.0001.png')
