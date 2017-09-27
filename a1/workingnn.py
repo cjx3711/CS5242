@@ -97,25 +97,26 @@ def build_model(nn_hdim, num_passes=20000, print_loss=False):
  
     # This is what we return at the end 
     model = {} 
- 
+    
+    def softmax(z):
+        exp_scores = np.exp(z) 
+        return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    
     # Gradient descent. For each batch... 
     for i in range(0, num_passes): 
  
         # Forward propagation 
-        z1 = X.dot(W1) + b1 
-        a1 = np.tanh(z1) 
-        z2 = a1.dot(W2) + b2 
-        exp_scores = np.exp(z2) 
-        probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True) 
+        z1 = np.tanh(X.dot(W1) + b1)
+        o = softmax(z1.dot(W2) + b2)
  
-        # Backpropagation 
-        delta3 = probs 
-        delta3[range(num_examples), y] -= 1 
-        dW2 = (a1.T).dot(delta3) 
-        db2 = np.sum(delta3, axis=0, keepdims=True) 
-        delta2 = delta3.dot(W2.T) * (1 - np.power(a1, 2)) 
+        # Backpropagation
+        o[range(num_examples), y] -= 1 
+        dW2 = (z1.T).dot(o)
+        db2 = np.sum(o, axis=0, keepdims=True) 
+        
+        delta2 = o.dot(W2.T) * (1 - np.power(z1, 2)) 
         dW1 = np.dot(X.T, delta2) 
-        db1 = np.sum(delta2, axis=0) 
+        db1 = np.sum(delta2, axis=0)
  
         # Add regularization terms (b1 and b2 don't have regularization terms) 
         dW2 += reg_lambda * W2 
@@ -126,6 +127,10 @@ def build_model(nn_hdim, num_passes=20000, print_loss=False):
         b1 += -epsilon * db1 
         W2 += -epsilon * dW2 
         b2 += -epsilon * db2 
+        
+        print("b1.shape: {0}".format(b1.shape))
+        print("db1.shape: {0}".format(db1.shape))
+        
  
         # Assign new parameters to the model 
         model = { 'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2} 
