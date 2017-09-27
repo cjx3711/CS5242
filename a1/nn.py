@@ -1,5 +1,5 @@
 import numpy as np 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 
@@ -8,8 +8,8 @@ def buildNetwork(layerSizes, X):
     # It will be stored as a python array of 2D matrices
     W = []
     for i in range(len(layerSizes) - 1):
-        print("{0} {1}".format(layerSizes[i], layerSizes[i+1]))
-        w = np.random.randn(layerSizes[i], layerSizes[i+1])
+        # print("{0} {1}".format(layerSizes[i], layerSizes[i+1]))
+        w = np.random.random((layerSizes[i], layerSizes[i+1]) ) * 0.5 - 0.25
         W.append(w)
     
     # print(W)
@@ -17,7 +17,7 @@ def buildNetwork(layerSizes, X):
     # Stored as list of bias arrays
     b = []
     for i in range(len(layerSizes) - 1):
-        b.append(np.zeros((1, layerSizes[i+1])))
+        b.append(np.random.random((1, layerSizes[i+1])) * 0.5 - 0.25)
     # print(b)
     
     # Generate the layers
@@ -40,65 +40,55 @@ def buildNetwork(layerSizes, X):
     }
 
 def softmax(x):
-    # print(x)
-    exp_scores = np.exp(x)
+    shiftx = x - np.max(x)
+    exp_scores = np.exp(shiftx)
     return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
 def activation(x):
     return np.maximum(0, x) # ReLU
 
-def activationPrime(x):
-    return 1
-
 def predict(model, X):
     yHat = forwardProp(model, X)
     predict = probToPrediction(yHat)
-    print(predict.shape)
-    print(predict[:10])
     return predict
 
 def probToPrediction(yHat):
     return np.argmax(yHat, axis=1)
 
-def forwardProp(model, X):
+def forwardProp(model, inputLayer):
     layerCount = len(model['layers'])
     W = model['W'] # Weights
     b = model['b'] # Biases
     L = model['L'] # Layers
+    L[0] = inputLayer
+    for i in range(layerCount-1):
+        L[i+1] = L[i].dot(W[i]) + b[i]
+        if i == layerCount - 2:
+            L[i+1] = softmax(L[i+1])
+        else:
+            L[i+1] = activation(L[i+1])
     
-    # print("L[0].shape: {0}".format(L[0].shape))
-    # print("L[1].shape: {0}".format(L[1].shape))
-    # print("W[0].shape: {0}".format(W[0].shape))
-    # print("b[0].shape: {0}".format(b[0].shape))
-    L[1] = L[0].dot(W[0]) + b[0]
-    L[1] = activation(L[1])
-    # print("avg L[1]: {0}".format(np.average(L[1])))
-    # print("L[1].shape: {0}".format(L[1].shape))
-    # print()
-    
-    # print("L[1].shape: {0}".format(L[1].shape))
-    # print("L[2].shape: {0}".format(L[2].shape))
-    # print("W[1].shape: {0}".format(W[1].shape))
-    # print("b[1].shape: {0}".format(b[1].shape))
-    L[2] = L[1].dot(W[1]) + b[1]
-    L[2] = activation(L[2])
-    # print("avg L[2]: {0}".format(np.average(L[2])))
-    
-    # print("L[2].shape: {0}".format(L[2].shape))
-    # print()
-    
-    # print("L[2].shape: {0}".format(L[2].shape))
-    # print("L[3].shape: {0}".format(L[3].shape))
-    # print("W[2].shape: {0}".format(W[2].shape))
-    # print("b[2].shape: {0}".format(b[2].shape))
-    L[3] = L[2].dot(W[2]) + b[2]
-    # print("avg L[3]: {0}".format(np.average(L[3])))
-    yHat = L[3] = softmax(L[3])
-    # print("L[3].shape: {0}".format(L[3].shape))
-    # print("yHat.shape: {0}".format(yHat.shape))
+    return L[layerCount-1]
 
-    return yHat
+def shuffleAndSplit(X, Y):
+    con = np.concatenate((X, Y), axis=1)
+    np.random.shuffle(con)
+    interval = int(con.shape[0] / 5)
+    cons = [
+        con[0:interval],
+        con[interval:interval*2],
+        con[interval*2:interval*3],
+        con[interval*3:interval*4],
+        con[interval*4:]
+    ]
+    batches = []
+    for c in cons:
+        x = c[:, :X.shape[1]]
+        y = c[:, X.shape[1]:]
+        batches.append((x,y))
+    return batches
 
+train_factor = 0.02
 
 def backProp(model, yHat, Y):
     layerCount = len(model['layers'])
@@ -106,43 +96,23 @@ def backProp(model, yHat, Y):
     b = model['b'] # Biases
     L = model['L'] # Layers
     
-    delta3 = -(Y - yHat)
-    delta3 /= delta3.shape[0]
-    dW3 = np.dot(L[2].T, delta3)
-    db3 = np.sum(delta3, axis = 0)
+    deltas = [0] * layerCount
+    dWs = [0] * layerCount
+    dbs = [0] * layerCount
     
-    delta2 = np.dot(delta3, W[2].T)
-    dW2 = np.dot(L[1].T, delta2)
-    db2 = np.sum(delta2, axis = 0)
-    
-    delta1 = np.dot(delta2, W[1].T)
-    dW1 = np.dot(L[0].T, delta1)
-    db1 = np.sum(delta1, axis = 0)
-    
-    W[0] -= 0.1 * dW1
-    W[1] -= 0.1 * dW2
-    W[2] -= 0.1 * dW3
-    b[0] -= 0.1 * db1
-    b[1] -= 0.1 * db2
-    b[2] -= 0.1 * db3
-    
-    # print("delta3.shape: {0}".format(delta3.shape))
-    # print("dW3.shape: {0}".format(dW3.shape))
-    # print("db3.shape: {0}".format(db3.shape))
-    # print("delta2.shape: {0}".format(delta2.shape))
-    # print("dW2.shape: {0}".format(dW2.shape))
-    # print("db2.shape: {0}".format(db2.shape))
-    # print("delta1.shape: {0}".format(delta1.shape))
-    # print("dW1.shape: {0}".format(dW1.shape))
-    # print("db1.shape: {0}".format(db1.shape))
-    # for i in range(3):
-    #     print("L[{0}].shape: {1}".format(i, L[i].shape))
-    # 
-    # for i in range(3):
-    #     print("W[{0}].shape: {1}".format(i, W[i].shape))
-    #     
-    # for i in range(3):
-    #     print("b[{0}].shape: {1}".format(i, b[i].shape))
+    for i in reversed(range(layerCount-1)):
+        if i == layerCount - 2:
+            deltas[i] = -(Y - yHat)
+            deltas[i] /= deltas[i].shape[0]
+        else:
+            deltas[i] = np.dot(deltas[i+1], W[i+1].T)
+            
+        dWs[i] = np.dot(L[i].T, deltas[i])
+        dbs[i] = np.sum(deltas[i], axis = 0)
+        
+    for i in range(layerCount-1):
+        W[i] -= train_factor * dWs[i]
+        b[i] -= train_factor * dbs[i]
 
 
 def costFunction(yHat, Y):
@@ -152,34 +122,66 @@ def costFunction(yHat, Y):
 
 X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
 y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
-# print (X)
+
+testX = np.loadtxt(open("Question2_123/x_test.csv", "rb"), delimiter=",")
+testy = np.loadtxt(open("Question2_123/y_test.csv", "rb"), dtype=np.int32)
+
 # print (y)
 # Convert into one hot array
 Y = np.zeros((X.shape[0], 4)) 
 for i, yelem in enumerate(np.nditer(y)):
     Y[i,yelem] = 1
 
+testY = np.zeros((testX.shape[0], 4)) 
+for i, yelem in enumerate(np.nditer(testy)):
+    testY[i,yelem] = 1
 # print(X.shape[0], 4)
-# print(Y)
 
 # plt.plot([1,2,3,4])
 # plt.ylabel('some numbers')
 # plt.show()
 
 layerSizes = [X.shape[1], 100, 40, 4]
-# print(layerSizes)
+# layerSizes = [X.shape[1]] + [28] * 6 + [4]
+# layerSizes = [X.shape[1]] + [14] * 28 + [4]
+print(layerSizes)
 
 model = buildNetwork(layerSizes, X[0:,:])
 
-# print(model['L'][-1])
 
-for i in range(500):
-    yHat = forwardProp(model, X[0:,:])
-    # print(model['L'][-1])
-    predict = probToPrediction(yHat)
-    error = costFunction(yHat, Y[0:])
-    backProp(model, yHat, Y[0:])
-    print("Error: {0}".format(error))
-
-
-
+epochCount = 1000
+trainErrorPlot = np.zeros((epochCount,))
+testErrorPlot = np.zeros((epochCount,))
+for i in range(epochCount):
+    for batch in shuffleAndSplit(X,Y):
+        x = batch[0]
+        y = batch[1]
+        
+        yHat = forwardProp(model, x[0:,:])
+        error = costFunction(yHat, y[0:])
+        trainErrorPlot[i] = error
+        backProp(model, yHat, y[0:])
+        
+    # yHat = forwardProp(model, X[0:,:])
+    # # print(yHat)
+    # error = costFunction(yHat, Y[0:])
+    # trainErrorPlot[i] = error
+    # backProp(model, yHat, Y[0:])
+    
+    testYHat = forwardProp(model, testX[0:,:])
+    testError = costFunction(testYHat, testY[0:])
+    testErrorPlot[i] = testError
+    
+    print("Error: Train: {0} Test: {1}".format(error, testError))
+    
+    
+epoches = np.arange(epochCount)
+plt.plot(epoches, trainErrorPlot)
+plt.plot(epoches, testErrorPlot)
+plt.show()
+# 
+# for i in range(itercount):
+#     X, y = shuffle(X, y)
+#     for batch in getBatches(X,y):
+#         # do training stuff.
+# 
