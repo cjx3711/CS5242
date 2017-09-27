@@ -1,15 +1,18 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerLine2D
 
-
-
+train_factor = 0.02
+init_weight = 0.5
+epochCount = 10
+    
 def buildNetwork(layerSizes, X):
     # Generate the weight matrix W for each layer
     # It will be stored as a python array of 2D matrices
     W = []
     for i in range(len(layerSizes) - 1):
         # print("{0} {1}".format(layerSizes[i], layerSizes[i+1]))
-        w = np.random.random((layerSizes[i], layerSizes[i+1]) ) * 0.5 - 0.25
+        w = np.random.random((layerSizes[i], layerSizes[i+1]) ) * init_weight - init_weight/2
         W.append(w)
     
     # print(W)
@@ -17,7 +20,7 @@ def buildNetwork(layerSizes, X):
     # Stored as list of bias arrays
     b = []
     for i in range(len(layerSizes) - 1):
-        b.append(np.random.random((1, layerSizes[i+1])) * 0.5 - 0.25)
+        b.append(np.random.random((1, layerSizes[i+1])) * init_weight - init_weight/2)
     # print(b)
     
     # Generate the layers
@@ -88,7 +91,6 @@ def shuffleAndSplit(X, Y):
         batches.append((x,y))
     return batches
 
-train_factor = 0.02
 
 def backProp(model, yHat, Y):
     layerCount = len(model['layers'])
@@ -120,68 +122,81 @@ def costFunction(yHat, Y):
     totalLoss = np.sum(-np.multiply(Y, np.log(yHat))) # axis = 1 for individual costs
     return totalLoss / Y.shape[0]
 
+def onehot(y):
+    Y = np.zeros((y.shape[0], 4)) 
+    for i, yelem in enumerate(np.nditer(y)):
+        Y[i,yelem] = 1
+    return Y
+
+def train(X,Y,testX,testYlayerSizes, filename):
+
+    model = buildNetwork(layerSizes, X[0:,:])
+    trainErrorPlot = np.zeros((epochCount,))
+    testErrorPlot = np.zeros((epochCount,))
+    for i in range(epochCount):
+        for batch in shuffleAndSplit(X,Y):
+            x = batch[0]
+            y = batch[1]
+            
+            yHat = forwardProp(model, x[0:,:])
+            error = costFunction(yHat, y[0:])
+            trainErrorPlot[i] = error
+            backProp(model, yHat, y[0:])
+            
+        # yHat = forwardProp(model, X[0:,:])
+        # # print(yHat)
+        # error = costFunction(yHat, Y[0:])
+        # trainErrorPlot[i] = error
+        # backProp(model, yHat, Y[0:])
+        
+        testYHat = forwardProp(model, testX[0:,:])
+        testError = costFunction(testYHat, testY[0:])
+        testErrorPlot[i] = testError
+        
+        print("Error: Train: {0} Test: {1}\t{2}".format(error, testError, i))
+        
+
+        epoches = np.arange(epochCount)
+
+        fig = plt.figure()
+        line1, = plt.plot(epoches, trainErrorPlot, label='Training Error')
+        line2, = plt.plot(epoches, testErrorPlot, label='Testing Error')
+        plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
+        fig.savefig(filename, dpi=fig.dpi)
+
+
 X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
 y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
 
 testX = np.loadtxt(open("Question2_123/x_test.csv", "rb"), delimiter=",")
 testy = np.loadtxt(open("Question2_123/y_test.csv", "rb"), dtype=np.int32)
 
-# print (y)
 # Convert into one hot array
-Y = np.zeros((X.shape[0], 4)) 
-for i, yelem in enumerate(np.nditer(y)):
-    Y[i,yelem] = 1
+Y = onehot(y)
+testY = onehot(testy)
 
-testY = np.zeros((testX.shape[0], 4)) 
-for i, yelem in enumerate(np.nditer(testy)):
-    testY[i,yelem] = 1
-# print(X.shape[0], 4)
-
-# plt.plot([1,2,3,4])
-# plt.ylabel('some numbers')
-# plt.show()
+train_factor = 0.02
+init_weight = 0.5
+epochCount = 10000
 
 layerSizes = [X.shape[1], 100, 40, 4]
-# layerSizes = [X.shape[1]] + [28] * 6 + [4]
-# layerSizes = [X.shape[1]] + [14] * 28 + [4]
-print(layerSizes)
+train(X,Y,testX,testY, '100-40-0.02.png')
+layerSizes = [X.shape[1]] + [28] * 6 + [4]
+train(X,Y,testX,testY, '28-6-0.02.png')
+layerSizes = [X.shape[1]] + [14] * 28 + [4]
+train(X,Y,testX,testY, '14-28-0.02.png')
 
-model = buildNetwork(layerSizes, X[0:,:])
+
+train_factor = 0.0001
+init_weight = 0.25
+epochCount = 15000
+
+layerSizes = [X.shape[1], 100, 40, 4]
+train(X,Y,testX,testY, '100-40-0.0001.png')
+layerSizes = [X.shape[1]] + [28] * 6 + [4]
+train(X,Y,testX,testY, '28-6-0.0001.png')
+layerSizes = [X.shape[1]] + [14] * 28 + [4]
+train(X,Y,testX,testY, '14-28-0.0001.png')
 
 
-epochCount = 1000
-trainErrorPlot = np.zeros((epochCount,))
-testErrorPlot = np.zeros((epochCount,))
-for i in range(epochCount):
-    for batch in shuffleAndSplit(X,Y):
-        x = batch[0]
-        y = batch[1]
-        
-        yHat = forwardProp(model, x[0:,:])
-        error = costFunction(yHat, y[0:])
-        trainErrorPlot[i] = error
-        backProp(model, yHat, y[0:])
-        
-    # yHat = forwardProp(model, X[0:,:])
-    # # print(yHat)
-    # error = costFunction(yHat, Y[0:])
-    # trainErrorPlot[i] = error
-    # backProp(model, yHat, Y[0:])
-    
-    testYHat = forwardProp(model, testX[0:,:])
-    testError = costFunction(testYHat, testY[0:])
-    testErrorPlot[i] = testError
-    
-    print("Error: Train: {0} Test: {1}".format(error, testError))
-    
-    
-epoches = np.arange(epochCount)
-plt.plot(epoches, trainErrorPlot)
-plt.plot(epoches, testErrorPlot)
-plt.show()
-# 
-# for i in range(itercount):
-#     X, y = shuffle(X, y)
-#     for batch in getBatches(X,y):
-#         # do training stuff.
-# 
+
