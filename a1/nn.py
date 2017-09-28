@@ -68,7 +68,20 @@ def setNetwork(layerSizes, model, biasFile, weightsFile):
                     W[i][r][c] = float(next(numbers))
 
 def outputNetwork(layerSizes, model, biasFile, weightsFile):
-    pass
+    W = model['W'] # Weights
+    b = model['b'] # Biases
+    L = model['L'] # Layers
+        
+    with open(biasFile, 'w') as csvfile:
+        for i in range(len(layerSizes) - 1):
+            strs = ["%.10f" % number for number in b[i][0]]
+            csvfile.write(','.join(strs) + '\n')
+            
+    with open(weightsFile, 'w') as csvfile:
+        for i in range(len(layerSizes) - 1):
+            for r in range(W[i].shape[0]):
+                strs = ["%.10f" % number for number in W[i][r]]
+                csvfile.write(','.join(strs) + '\n')
 
 def softmax(x):
     shiftx = x - np.max(x)
@@ -156,18 +169,17 @@ def onehot(y):
         Y[i,yelem] = 1
     return Y
 
-def trainOnce():
+def trainOnce(layerSizes, filename):
     X = np.array([[-1, 1, 1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1]])
     y = np.array([[0, 0, 0, 1]])
     
-    layerSizes = [14, 100, 40, 4]
     model = buildNetwork(layerSizes, X)
-    setNetwork(layerSizes, model, 'Question2_4/b/b-100-40-4.csv', 'Question2_4/b/w-100-40-4.csv')
+    setNetwork(layerSizes, model, 'Question2_4/c/b-{0}-4.csv'.format(filename), 'Question2_4/c/w-{0}-4.csv'.format(filename))
     
     yHat = forwardProp(model, X)
     backProp(model, yHat, y)
     
-    outputNetwork(layerSizes, model, 'Question2_4/b/db-100-40-4.csv', 'Question2_4/b/dw-100-40-4.csv')
+    outputNetwork(layerSizes, model, 'Question2_4/c/db-{0}-4.csv'.format(filename), 'Question2_4/c/dw-{0}-4.csv'.format(filename))
 
 def train(X,oY,Y,testX, oTestY, testY, layerSizes, filename):
 
@@ -221,7 +233,9 @@ def train(X,oY,Y,testX, oTestY, testY, layerSizes, filename):
     fig.savefig(filename + '.accu.png', dpi=fig.dpi)
     plt.close()
     
-trainOnce()
+trainOnce([14, 100, 40, 4], '100-40')
+trainOnce([14]+ [28] * 6 + [4], '28-6')
+trainOnce([14]+ [14] * 28 + [4], '14-28')
 
 # X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
 # y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
