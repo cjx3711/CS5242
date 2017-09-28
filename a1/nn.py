@@ -1,6 +1,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 from matplotlib.legend_handler import HandlerLine2D
+import csv
 
 train_factor = 0.02
 init_weight = 0.5
@@ -41,6 +42,33 @@ def buildNetwork(layerSizes, X):
         'L': L,
         'layers': layerSizes
     }
+    
+def setNetwork(layerSizes, model, biasFile, weightsFile):
+    W = model['W'] # Weights
+    b = model['b'] # Biases
+    L = model['L'] # Layers
+    
+    with open(biasFile, 'r') as csvfile:
+        for i in range(len(layerSizes) - 1):
+            row = next(csvfile).strip().strip("'")
+            numbers = iter([x.strip() for x in row.split(',')])
+            next(numbers)
+            for j in range(layerSizes[i+1]):
+                b[i][0][j] = float(next(numbers))
+                
+    with open(weightsFile, 'r') as csvfile:
+        for i in range(len(layerSizes) - 1):
+            rows = layerSizes[i]
+            cols = layerSizes[i+1]
+            for r in range(rows):
+                row = next(csvfile).strip().strip("'")
+                numbers = iter([x.strip() for x in row.split(',')])
+                next(numbers)
+                for c in range(cols):
+                    W[i][r][c] = float(next(numbers))
+
+def outputNetwork(layerSizes, model, biasFile, weightsFile):
+    pass
 
 def softmax(x):
     shiftx = x - np.max(x)
@@ -128,6 +156,19 @@ def onehot(y):
         Y[i,yelem] = 1
     return Y
 
+def trainOnce():
+    X = np.array([[-1, 1, 1, 1, -1, -1, 1, -1, 1, 1, -1, -1, 1, 1]])
+    y = np.array([[0, 0, 0, 1]])
+    
+    layerSizes = [14, 100, 40, 4]
+    model = buildNetwork(layerSizes, X)
+    setNetwork(layerSizes, model, 'Question2_4/b/b-100-40-4.csv', 'Question2_4/b/w-100-40-4.csv')
+    
+    yHat = forwardProp(model, X)
+    backProp(model, yHat, y)
+    
+    outputNetwork(layerSizes, model, 'Question2_4/b/db-100-40-4.csv', 'Question2_4/b/dw-100-40-4.csv')
+
 def train(X,oY,Y,testX, oTestY, testY, layerSizes, filename):
 
     model = buildNetwork(layerSizes, X[0:,:])
@@ -179,41 +220,43 @@ def train(X,oY,Y,testX, oTestY, testY, layerSizes, filename):
     plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
     fig.savefig(filename + '.accu.png', dpi=fig.dpi)
     plt.close()
+    
+trainOnce()
 
-X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
-y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
+# X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
+# y = np.loadtxt(open("Question2_123/y_train.csv", "rb"), dtype=np.int32)
+# 
+# testX = np.loadtxt(open("Question2_123/x_test.csv", "rb"), delimiter=",")
+# testy = np.loadtxt(open("Question2_123/y_test.csv", "rb"), dtype=np.int32)
+# 
+# # Convert into one hot array
+# Y = onehot(y)
+# testY = onehot(testy)
 
-testX = np.loadtxt(open("Question2_123/x_test.csv", "rb"), delimiter=",")
-testy = np.loadtxt(open("Question2_123/y_test.csv", "rb"), dtype=np.int32)
-
-# Convert into one hot array
-Y = onehot(y)
-testY = onehot(testy)
-
-train_factor = 0.025
-init_weight = 0.25
-epochCount = 10000
-
-layerSizes = [X.shape[1], 100, 40, 4]
-name = '100-4'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
-layerSizes = [X.shape[1]] + [28] * 6 + [4]
-name = '28^6'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
-layerSizes = [X.shape[1]] + [14] * 28 + [4]
-name = '14^28'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
-
-train_factor = 0.0005
-init_weight = 0.15
-epochCount = 15000
-
-layerSizes = [X.shape[1], 100, 40, 4]
-name = '100-4'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
-layerSizes = [X.shape[1]] + [28] * 6 + [4]
-name = '28^6'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
-layerSizes = [X.shape[1]] + [14] * 28 + [4]
-name = '14^28'
-train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# train_factor = 0.025
+# init_weight = 0.25
+# epochCount = 10000
+# 
+# layerSizes = [X.shape[1], 100, 40, 4]
+# name = '100-4'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# layerSizes = [X.shape[1]] + [28] * 6 + [4]
+# name = '28^6'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# layerSizes = [X.shape[1]] + [14] * 28 + [4]
+# name = '14^28'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# 
+# train_factor = 0.0005
+# init_weight = 0.15
+# epochCount = 15000
+# 
+# layerSizes = [X.shape[1], 100, 40, 4]
+# name = '100-4'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# layerSizes = [X.shape[1]] + [28] * 6 + [4]
+# name = '28^6'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+# layerSizes = [X.shape[1]] + [14] * 28 + [4]
+# name = '14^28'
+# train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))

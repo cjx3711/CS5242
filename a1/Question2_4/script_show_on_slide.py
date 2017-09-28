@@ -10,13 +10,13 @@ import zipfile
     You are expected to upload a e*******.zip file, inside the zip file contains 6 gradients.csv file.
     For verification, you can comment out the line11 to 15, and change the truth_path and ID to 'b', however, do note the grading process WILL contain these lines.
 """
-ID = 'e012345678' 
-truth_path = 'the_truth_path' #change truth_path = 'b' for verification
+ID = 'a0133269' 
+truth_path = 'b' #change truth_path = 'b' for verification
 zip_ref = zipfile.ZipFile(ID+'.zip', 'r')
 zip_ref.extractall('.')
 zip_ref.close()
 file_name = ['dw-100-40-4.csv', 'db-100-40-4.csv', 'dw-28-6-4.csv', 'db-28-6-4.csv', 'dw-14-28-4.csv', 'db-14-28-4.csv'] 
-true_file = ['true-dw-100-40-4.csv', 'true-db-100-40-4.csv', 'true-dw-28*6-4.csv', 'true-db-28*6-4.csv', 'true-dw-14*28-4.csv', 'true-db-14*28-4.csv']
+true_file = ['true-dw-100-40-4.csv', 'true-db-100-40-4.csv', 'true-dw-28-6-4.csv', 'true-db-28-6-4.csv', 'true-dw-14-28-4.csv', 'true-db-14-28-4.csv']
 threshold = 0.05
 
 def read_file(name):
