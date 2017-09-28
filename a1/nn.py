@@ -128,21 +128,27 @@ def onehot(y):
         Y[i,yelem] = 1
     return Y
 
-def train(X,Y,testX,testYlayerSizes, filename):
+def train(X,oY,Y,testX, oTestY, testY, layerSizes, filename):
 
     model = buildNetwork(layerSizes, X[0:,:])
     trainErrorPlot = np.zeros((epochCount,))
     testErrorPlot = np.zeros((epochCount,))
+    trainAccuPlot = np.zeros((epochCount,))
+    testAccuPlot = np.zeros((epochCount,))
     for i in range(epochCount):
         for batch in shuffleAndSplit(X,Y):
             x = batch[0]
             y = batch[1]
             
             yHat = forwardProp(model, x[0:,:])
-            error = costFunction(yHat, y[0:])
-            trainErrorPlot[i] = error
             backProp(model, yHat, y[0:])
             
+        yHat = forwardProp(model, X[0:,:])
+        error = costFunction(yHat, Y[0:])
+        trainErrorPlot[i] = error
+        prediction = probToPrediction(yHat)
+        trainAccu = np.sum(prediction == oY[0:]) / prediction.shape[0]
+        trainAccuPlot[i] = trainAccu
         # yHat = forwardProp(model, X[0:,:])
         # # print(yHat)
         # error = costFunction(yHat, Y[0:])
@@ -152,9 +158,11 @@ def train(X,Y,testX,testYlayerSizes, filename):
         testYHat = forwardProp(model, testX[0:,:])
         testError = costFunction(testYHat, testY[0:])
         testErrorPlot[i] = testError
-        
-        print("Error: Train: {0} Test: {1}\t{2}".format(error, testError, i))
-        
+        testPrediction = probToPrediction(testYHat)
+        testAccu = np.sum(testPrediction == oTestY[0:]) / testPrediction.shape[0]
+        testAccuPlot[i] = testAccu
+                
+        print("{0}\tTrain: {1:.4f}({2:.4f})\tTest: {3:.4f}({4:.4f})".format(i, error, trainAccu, testError, testAccu))
 
         epoches = np.arange(epochCount)
 
@@ -162,7 +170,14 @@ def train(X,Y,testX,testYlayerSizes, filename):
     line1, = plt.plot(epoches, trainErrorPlot, label='Training Error')
     line2, = plt.plot(epoches, testErrorPlot, label='Testing Error')
     plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
-    fig.savefig(filename, dpi=fig.dpi)
+    fig.savefig(filename + '.error.png', dpi=fig.dpi)
+    plt.close()
+    
+    fig = plt.figure()
+    line1, = plt.plot(epoches, trainAccuPlot, label='Training Accuracy')
+    line2, = plt.plot(epoches, testAccuPlot, label='Testing Accuracy')
+    plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)})
+    fig.savefig(filename + '.accu.png', dpi=fig.dpi)
     plt.close()
 
 X = np.loadtxt(open("Question2_123/x_train.csv", "rb"), delimiter=",")
@@ -175,28 +190,30 @@ testy = np.loadtxt(open("Question2_123/y_test.csv", "rb"), dtype=np.int32)
 Y = onehot(y)
 testY = onehot(testy)
 
-train_factor = 0.02
-init_weight = 0.5
-epochCount = 8000
-
-layerSizes = [X.shape[1], 100, 40, 4]
-train(X,Y,testX,testY, '100-40-0.02.png')
-layerSizes = [X.shape[1]] + [28] * 6 + [4]
-train(X,Y,testX,testY, '28-6-0.02.png')
-layerSizes = [X.shape[1]] + [14] * 28 + [4]
-train(X,Y,testX,testY, '14-28-0.02.png')
-
-
-train_factor = 0.0001
+train_factor = 0.025
 init_weight = 0.25
-epochCount = 12000
+epochCount = 10000
 
 layerSizes = [X.shape[1], 100, 40, 4]
-train(X,Y,testX,testY, '100-40-0.0001.png')
+name = '100-4'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
 layerSizes = [X.shape[1]] + [28] * 6 + [4]
-train(X,Y,testX,testY, '28-6-0.0001.png')
+name = '28^6'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
 layerSizes = [X.shape[1]] + [14] * 28 + [4]
-train(X,Y,testX,testY, '14-28-0.0001.png')
+name = '14^28'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
 
+train_factor = 0.0005
+init_weight = 0.15
+epochCount = 15000
 
-
+layerSizes = [X.shape[1], 100, 40, 4]
+name = '100-4'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+layerSizes = [X.shape[1]] + [28] * 6 + [4]
+name = '28^6'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
+layerSizes = [X.shape[1]] + [14] * 28 + [4]
+name = '14^28'
+train(X,y,Y, testX, testy, testY, layerSizes, "{0}.{1}.{2}".format(name, train_factor, init_weight))
