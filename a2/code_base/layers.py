@@ -247,19 +247,56 @@ def conv_backward(dout, cache):
     Backward pass for a convolutional layer.
 
     Inputs:
-    - dout: Upstream derivatives.
+    - dout: Upstream derivatives. (N, F, H', W')
     - cache: A tuple of (x, w, b, conv_param) as in conv_forward
 
     Returns a tuple of:
     - dx: Gradient with respect to x
     - dw: Gradient with respect to w
     - db: Gradient with respect to b
+    
+    - x: Input data shape (N, C, H, W)
+    - w: Filter weights shape (F, C, HH, WW)
+    - b: Biases shape (F,)
+    - out: Output data, of shape (N, F, H', W') where H' and W' are given by
+      H' = 1 + (H + 2 * pad - HH) / stride
+      W' = 1 + (W + 2 * pad - WW) / stride
     """
-    dx, dw, db = None, None, None
     ###########################################################################
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    pass
+    print("dout.shape {0}".format(dout.shape))
+    dx, dw, db = np.zeros((4,3,5,5)), np.zeros((2,3,3,3)), np.zeros((2,))
+    N, C, H, W = x.shape 
+    F, C, HH, WW = w.shape
+    x, w, b, conv_param = cache
+    stride, pad = conv_param['stride'], conv_param['pad']
+    oH = int(1 + (H + pad - HH) / stride)
+    oW = int(1 + (W + pad - WW) / stride)
+    
+    # Calculate the delta for b
+    db = np.sum(dout, (0, 2, 3)) # sum along axis N, H', and W'
+    
+    # Calculate something
+    pX = np.pad(x, [(0,0), (0,0), (pad,pad), (pad,pad)], mode='constant') # Pad zeros only on the H and W axis
+    for nI in range(N):
+        for hI in range(oH):
+            fH = hI * conv_param['stride']
+            tH = fH + HH
+            for wI in range(oW):
+                fW = wI * conv_param['stride']
+                tW = fW + WW
+                xPart = pX[n,:,i-HH:i, j-WW:j]
+                field = xPart.reshape((1,C*HH*WW)) 
+    
+
+    print("x.shape {0}".format(x.shape))
+    print("w.shape {0}".format(w.shape))
+    dout[nI, fI, :, :], x[nI, ] 
+    
+    
+    dw[fI, :, ]
+    dx[nI, :, 0, 0]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
