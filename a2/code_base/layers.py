@@ -192,12 +192,12 @@ def conv_forward(x, w, b, conv_param):
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
     pX = np.pad(x, [(0,0), (0,0), (1,1), (1,1)], mode='constant')
-    print("x.shape {0}".format(x.shape))
-    print("pX.shape {0}".format(pX.shape))
-    print("w.shape {0}".format(w.shape))
-    
-    print("b.shape {0}".format(b.shape))
-    print("conv_param {0}".format(conv_param))
+    # print("x.shape {0}".format(x.shape))
+    # print("pX.shape {0}".format(pX.shape))
+    # print("w.shape {0}".format(w.shape))
+    # 
+    # print("b.shape {0}".format(b.shape))
+    # print("conv_param {0}".format(conv_param))
     N = x.shape[0]
     C = x.shape[1]
     H = x.shape[2]
@@ -208,7 +208,7 @@ def conv_forward(x, w, b, conv_param):
     oH = int(1 + (H + conv_param['pad'] - HH) / conv_param['stride'])
     oW = int(1 + (W + conv_param['pad'] - WW) / conv_param['stride'])
     out = np.zeros((N, F, oH, oW))
-    print("out.shape {0}".format(out.shape))
+    # print("out.shape {0}".format(out.shape))
     
     for hI in range(oH):
         fH = hI * conv_param['stride']
@@ -233,7 +233,7 @@ def conv_forward(x, w, b, conv_param):
             # print(result.shape)
             out[:, :, hI, wI] = result
             # print(result)
-    print(out)
+    # print(out)
     
     ###########################################################################
     #                             END OF YOUR CODE                            #
