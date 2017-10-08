@@ -191,30 +191,26 @@ def conv_forward(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
-    pX = np.pad(x, [(0,0), (0,0), (1,1), (1,1)], mode='constant')
     # print("x.shape {0}".format(x.shape))
     # print("pX.shape {0}".format(pX.shape))
     # print("w.shape {0}".format(w.shape))
     # 
     # print("b.shape {0}".format(b.shape))
     # print("conv_param {0}".format(conv_param))
-    N = x.shape[0]
-    C = x.shape[1]
-    H = x.shape[2]
-    W = x.shape[3]
-    F = w.shape[0]
-    HH = w.shape[2]
-    WW = w.shape[3]
-    oH = int(1 + (H + conv_param['pad'] - HH) / conv_param['stride'])
-    oW = int(1 + (W + conv_param['pad'] - WW) / conv_param['stride'])
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape
+    stride, pad = conv_param['stride'], conv_param['pad']
+    pX = np.pad(x, [(0,0), (0,0), (pad//2,pad//2), (pad//2,pad//2)], mode='constant') # Pad zeros only on the H and W axis
+    oH = int(1 + (H + pad - HH) / stride)
+    oW = int(1 + (W + pad - WW) / stride)
     out = np.zeros((N, F, oH, oW))
     # print("out.shape {0}".format(out.shape))
     
     for hI in range(oH):
-        fH = hI * conv_param['stride']
+        fH = hI * stride
         tH = fH + HH
         for wI in range(oW):
-            fW = wI * conv_param['stride']
+            fW = wI * stride
             tW = fW + WW
             
             # print ("fH, tH, fW, tW: {0}, {1}, {2}, {3}".format(fH, tH, fW, tW))
@@ -222,9 +218,9 @@ def conv_forward(x, w, b, conv_param):
             wPart = w[:,:,:,:]
             # print(xPart.shape)
             # print(wPart.shape)
-            
-            xFlat = xPart.reshape( N, xPart.shape[1] * xPart.shape[2] * xPart.shape[3] )
-            wFlat = wPart.reshape( F, wPart.shape[1] * wPart.shape[2] * wPart.shape[3] )
+
+            xFlat = xPart.reshape( N, C * HH * WW )
+            wFlat = wPart.reshape( F, C * HH * WW )
 
             # print(xFlat.shape)
             # print(wFlat.shape)
@@ -265,39 +261,89 @@ def conv_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
-    print("dout.shape {0}".format(dout.shape))
-    dx, dw, db = np.zeros((4,3,5,5)), np.zeros((2,3,3,3)), np.zeros((2,))
-    N, C, H, W = x.shape 
-    F, C, HH, WW = w.shape
+    # print("dout.shape {0}".format(dout.shape))
+    # dx, dw, db = np.zeros((4,3,5,5)), np.zeros((2,3,3,3)), np.zeros((2,))
+    # x, w, b, conv_param = cache
+    # N, C, H, W = x.shape 
+    # F, C, HH, WW = w.shape
+    # stride, pad = conv_param['stride'], conv_param['pad']
+    # oH = int(1 + (H + pad - HH) / stride)
+    # oW = int(1 + (W + pad - WW) / stride)
+    # 
+    # # Calculate the delta for b
+    # db = np.sum(dout, (0, 2, 3)) # sum along axis N, H', and W'
+    # 
+    # # Calculate something
+    # xCols = None
+    # pX = np.pad(x, [(0,0), (0,0), (pad//2,pad//2), (pad//2,pad//2)], mode='constant') # Pad zeros only on the H and W axis
+    # for nI in range(N):
+    #     for hI in range(oH):
+    #         fH = hI * conv_param['stride']
+    #         tH = fH + HH
+    #         for wI in range(oW):
+    #             fW = wI * conv_param['stride']
+    #             tW = fW + WW
+    #             xPart = pX[nI,:,fH:tH, fW:tW]
+    # 
+    #             field = xPart.reshape((1, C * HH * WW)) 
+    #             if xCols is None:
+    #                 xCols = field
+    #             else:
+    #                 xCols = np.vstack((xCols, field))
+    # xCols shape: (HH * WW * C) x (H' * W' * N)
+    # xCols = xCols.T
+    # 
+    # print("cXols {0}".format(xCols))
+    # 
+    # dout_ = dout.transpose(1, 2, 3, 0) # (F, H', W', N)
+    # doutCols = dout_.reshape(F, oH * oW * N)
+    # dwCols = np.dot(doutCols, xCols.T) # (F) x (HH * WW * C)
+    # dw = dwCols.reshape(F, C, HH, WW) # (F, C, HH, WW)
+    # print(xCols.shape)
+    
+    dx, dw, db = None, None, None
     x, w, b, conv_param = cache
     stride, pad = conv_param['stride'], conv_param['pad']
-    oH = int(1 + (H + pad - HH) / stride)
-    oW = int(1 + (W + pad - WW) / stride)
-    
-    # Calculate the delta for b
-    db = np.sum(dout, (0, 2, 3)) # sum along axis N, H', and W'
-    
-    # Calculate something
-    pX = np.pad(x, [(0,0), (0,0), (pad,pad), (pad,pad)], mode='constant') # Pad zeros only on the H and W axis
-    for nI in range(N):
-        for hI in range(oH):
-            fH = hI * conv_param['stride']
-            tH = fH + HH
-            for wI in range(oW):
-                fW = wI * conv_param['stride']
-                tW = fW + WW
-                xPart = pX[n,:,i-HH:i, j-WW:j]
-                field = xPart.reshape((1,C*HH*WW)) 
-    
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
 
-    print("x.shape {0}".format(x.shape))
-    print("w.shape {0}".format(w.shape))
-    dout[nI, fI, :, :], x[nI, ] 
-    
-    
-    dw[fI, :, ]
-    dx[nI, :, 0, 0]
-    ###########################################################################
+    _, _, DH, DW = dout.shape
+
+    dx = np.zeros(x.shape)
+    dw = np.zeros(w.shape)
+
+    H_out = 1 + (H + pad - HH) / stride
+    W_out = 1 + (W + pad - WW) / stride
+
+    kernel_size = C * HH * WW
+
+    dx_padded = np.zeros((N, C, H + pad, W + pad))
+    convolution = np.reshape(w, (F, kernel_size))
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad//2, pad//2), (pad//2, pad//2)), 'constant', constant_values=0)
+    dw_reshaped = np.zeros((F, kernel_size))
+    for i in range(int(H_out)):
+        top = i * stride
+        bottom = top + HH
+        for j in range(int(W_out)):
+            left = j * stride
+            right = left + WW
+
+            dout_ij = dout[:, :, i, j]
+
+            dx_sub = dout_ij.dot(convolution)
+            dx_sub_reshaped = dx_sub.reshape(N, C, HH, WW)
+            dx_padded[:, :, top:bottom, left:right] += dx_sub_reshaped
+
+            # x_sub has dim (N, C*HH*WW),
+            # dout_ij has dimension (N, F)
+            # dw_reshaped has dim (F, C*HH*WW)
+            x_sub_reshaped = x_padded[:, :, top:bottom, left:right].reshape(N, C * HH * WW)
+            dw_reshaped += dout_ij.T.dot(x_sub_reshaped)
+
+    dx = dx_padded[:, :, pad//2:-pad//2, pad//2:-pad//2]
+    dw = dw_reshaped.reshape((F, C, HH, WW))
+    db = dout.sum(axis=(0, 2, 3))
+    ####################
     #                             END OF YOUR CODE                            #
     ###########################################################################
     return dx, dw, db
@@ -322,7 +368,22 @@ def max_pool_forward(x, pool_param):
     ###########################################################################
     # TODO: Implement the max pooling forward pass                            #
     ###########################################################################
-    pass
+    N, C, H, W = x.shape
+    pool_height, pool_width, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+
+    W_out = int((W - pool_width) / stride) + 1
+    H_out = int((H - pool_height) / stride) + 1
+
+    out = np.zeros((N, C, H_out, W_out))
+    
+    for i in range(H_out):
+        top = i * stride
+        bottom = top + pool_height
+        for j in range(W_out):
+            left = j * stride
+            right = left + pool_width
+
+            out[:, :, i, j] = x[:, :, top:bottom, left:right].max(axis=(2, 3))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -345,7 +406,32 @@ def max_pool_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the max pooling backward pass                           #
     ###########################################################################
-    pass
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    pool_height, pool_width, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+
+    W_out = int((W - pool_width) / stride) + 1
+    H_out = int((H - pool_height) / stride) + 1
+
+    dx = np.zeros((N, C, H, W))
+    
+    for i in range(H_out):
+        top = i * stride
+        bottom = top + pool_height
+        for j in range(W_out):
+            left = j * stride
+            right = left + pool_width
+
+            dout_ij = dout[:, :, i, j].reshape(N*C)
+            view = x[:, :, top:bottom, left:right].reshape((N * C, pool_height*pool_width))
+            dx_view = dx[:, :, top:bottom, left:right].reshape((N * C, pool_height*pool_width)).T
+
+            pos = np.argmax(view, axis=1)
+
+            dx_view[pos, range(N * C)] += dout_ij
+
+            dx_view_unfucked = dx_view.T.reshape(N, C, pool_height, pool_width)
+            dx[:, :, top:bottom, left:right] += dx_view_unfucked
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
