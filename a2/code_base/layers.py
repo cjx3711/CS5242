@@ -258,92 +258,60 @@ def conv_backward(dout, cache):
       H' = 1 + (H + 2 * pad - HH) / stride
       W' = 1 + (W + 2 * pad - WW) / stride
     """
+    dx, dw, db = None, None, None
+    
     ###########################################################################
     # TODO: Implement the convolutional backward pass.                        #
     ###########################################################################
     # print("dout.shape {0}".format(dout.shape))
     # dx, dw, db = np.zeros((4,3,5,5)), np.zeros((2,3,3,3)), np.zeros((2,))
-    # x, w, b, conv_param = cache
-    # N, C, H, W = x.shape 
-    # F, C, HH, WW = w.shape
-    # stride, pad = conv_param['stride'], conv_param['pad']
-    # oH = int(1 + (H + pad - HH) / stride)
-    # oW = int(1 + (W + pad - WW) / stride)
-    # 
-    # # Calculate the delta for b
-    # db = np.sum(dout, (0, 2, 3)) # sum along axis N, H', and W'
-    # 
-    # # Calculate something
-    # xCols = None
-    # pX = np.pad(x, [(0,0), (0,0), (pad//2,pad//2), (pad//2,pad//2)], mode='constant') # Pad zeros only on the H and W axis
-    # for nI in range(N):
-    #     for hI in range(oH):
-    #         fH = hI * conv_param['stride']
-    #         tH = fH + HH
-    #         for wI in range(oW):
-    #             fW = wI * conv_param['stride']
-    #             tW = fW + WW
-    #             xPart = pX[nI,:,fH:tH, fW:tW]
-    # 
-    #             field = xPart.reshape((1, C * HH * WW)) 
-    #             if xCols is None:
-    #                 xCols = field
-    #             else:
-    #                 xCols = np.vstack((xCols, field))
-    # xCols shape: (HH * WW * C) x (H' * W' * N)
-    # xCols = xCols.T
-    # 
-    # print("cXols {0}".format(xCols))
-    # 
-    # dout_ = dout.transpose(1, 2, 3, 0) # (F, H', W', N)
-    # doutCols = dout_.reshape(F, oH * oW * N)
-    # dwCols = np.dot(doutCols, xCols.T) # (F) x (HH * WW * C)
-    # dw = dwCols.reshape(F, C, HH, WW) # (F, C, HH, WW)
-    # print(xCols.shape)
-    
-    dx, dw, db = None, None, None
     x, w, b, conv_param = cache
-    stride, pad = conv_param['stride'], conv_param['pad']
-    N, C, H, W = x.shape
-    F, _, HH, WW = w.shape
-
+    N, C, H, W = x.shape 
+    F, C, HH, WW = w.shape
     _, _, DH, DW = dout.shape
+    
+    dx, dw = np.zeros(x.shape), np.zeros(w.shape)
+    print("dx.shape {0}".format(dx.shape))
+    print("dw.shape {0}".format(dw.shape))
+    
+    stride, pad = conv_param['stride'], conv_param['pad']
+    padH = pad // 2
+    oH = int(1 + (H + pad - HH) / stride)
+    oW = int(1 + (W + pad - WW) / stride)
 
-    dx = np.zeros(x.shape)
-    dw = np.zeros(w.shape)
+    kernelSize = C * HH * WW
+    pDX = np.zeros((N, C, H + pad, W + pad))
+    conv = np.reshape(w, (F, kernelSize))
+    
+    print("pDX.shape {0}".format(pDX.shape))
+    print("conv.shape {0}".format(conv.shape))
+    
+    pX = np.pad(x, ((0, 0), (0, 0), (padH, padH), (padH, padH)), mode='constant') # Pad zeros only on the H and W axis
+        
+    dwReshaped = np.zeros((F, kernelSize))
+    for hI in range(oH):
+        fH = hI * stride
+        tH = fH + HH
+        for wI in range(oW):
+            fW = wI * stride
+            tW = fW + WW
 
-    H_out = 1 + (H + pad - HH) / stride
-    W_out = 1 + (W + pad - WW) / stride
+            doutPart = dout[:, :, hI, wI]
 
-    kernel_size = C * HH * WW
-
-    dx_padded = np.zeros((N, C, H + pad, W + pad))
-    convolution = np.reshape(w, (F, kernel_size))
-    x_padded = np.pad(x, ((0, 0), (0, 0), (pad//2, pad//2), (pad//2, pad//2)), 'constant', constant_values=0)
-    dw_reshaped = np.zeros((F, kernel_size))
-    for i in range(int(H_out)):
-        top = i * stride
-        bottom = top + HH
-        for j in range(int(W_out)):
-            left = j * stride
-            right = left + WW
-
-            dout_ij = dout[:, :, i, j]
-
-            dx_sub = dout_ij.dot(convolution)
-            dx_sub_reshaped = dx_sub.reshape(N, C, HH, WW)
-            dx_padded[:, :, top:bottom, left:right] += dx_sub_reshaped
+            dxSub = doutPart.dot(conv)
+            dxSubReshaped = dxSub.reshape(N, C, HH, WW)
+            pDX[:, :, fH:tH, fW:tW] += dxSubReshaped
 
             # x_sub has dim (N, C*HH*WW),
-            # dout_ij has dimension (N, F)
-            # dw_reshaped has dim (F, C*HH*WW)
-            x_sub_reshaped = x_padded[:, :, top:bottom, left:right].reshape(N, C * HH * WW)
-            dw_reshaped += dout_ij.T.dot(x_sub_reshaped)
+            # doutPart has dimension (N, F)
+            # dwReshaped has dim (F, C*HH*WW)
+            xSubReshaped = pX[:, :, fH:tH, fW:tW].reshape(N, C * HH * WW)
+            dwReshaped += doutPart.T.dot(xSubReshaped)
 
-    dx = dx_padded[:, :, pad//2:-pad//2, pad//2:-pad//2]
-    dw = dw_reshaped.reshape((F, C, HH, WW))
-    db = dout.sum(axis=(0, 2, 3))
-    ####################
+    dx = pDX[:, :, padH:-padH, padH:-padH]
+    dw = dwReshaped.reshape((F, C, HH, WW))
+    db = dout.sum(axis=(0, 2, 3)) # sum along axis N, H', and W'
+    ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
     return dx, dw, db
