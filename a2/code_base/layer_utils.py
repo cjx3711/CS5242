@@ -1,6 +1,18 @@
 pass
 from code_base.layers import *
 
+def affine_relu_forward(x, w, b):
+    a, affine_cache = affine_forward(x, w, b)
+    out, relu_cache = relu_forward(a)
+    cache = (affine_cache, relu_cache)
+    return out, cache
+
+def affine_relu_backward(dout, cache):
+    affine_cache, relu_cache = cache
+    da = relu_backward(dout, relu_cache)
+    dx, dw, db = affine_backward(da, affine_cache)
+    return dx, dw, db
+
 def conv_relu_forward(x, w, b, conv_param):
     """
     A convenience layer that performs a convolution followed by a ReLU.

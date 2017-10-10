@@ -34,10 +34,51 @@ class ThreeLayerConvNet(object):
     - reg: Scalar giving L2 regularization strength
     - dtype: numpy datatype to use for computation.
     """
-    self.params = {}
     self.reg = reg
     self.use_dropout = dropout > 0
     self.dtype = dtype
+    
+
+    F = num_filters
+    # Conv layer
+    # Input: (N, C, H, W)
+    # Output: (N, F, Hc, Wc)
+    # ConvW: (F, C, HH, WW)
+    C, H, W = input_dim
+    w1Shape = (F, C, filter_size, filter_size) 
+    w1 = np.random.randn(np.product(w1Shape)).reshape(w1Shape) * weight_scale
+    b1 = np.zeros((F,))
+    print(w1.shape)
+    print(b1.shape)
+    pad = (filter_size - 1)
+    Hc = 1 + (H + pad - filter_size) # / stride (assume stride = 1)
+    Wc = 1 + (W + pad - filter_size) # / stride (assume stride = 1)
+    
+    # Pool layer  (No weights)
+    # Input: (N, F, Hc, Wc)
+    # Output: (N, F, Hp, Wp)
+    Hp = 1 + (Hc - 2) // 2
+    Wp = 1 + (Wc - 2) // 2
+    
+    # Hidden Affine layer
+    # Input: (N, F * Hp * Wp)
+    # Output: (N, Ha)
+    # HidAffineW: (F * Hp * Wp, Ha)
+    w2 = np.random.randn(F * Hp * Wp, hidden_dim)
+    b2 = np.zeros((hidden_dim,))
+    
+    # Output Affine layer
+    # Input: (N, Ha)
+    # Output: (N, NC)
+    # AffineW: (Ha, NC)
+    w3 = np.random.randn(hidden_dim, num_classes)
+    b3 = np.zeros((num_classes,))
+    
+    self.params = {
+        "W1": w1, "b1": b1,
+        "W2": w2, "b2": b2,
+        "W3": w3, "b3": b3
+    }
     
     ############################################################################
     # TODO: Initialize weights and biases for the three-layer convolutional    #
@@ -77,6 +118,7 @@ class ThreeLayerConvNet(object):
     W1, b1 = self.params['W1'], self.params['b1']
     W2, b2 = self.params['W2'], self.params['b2']
     W3, b3 = self.params['W3'], self.params['b3']
+    N = X.shape[0]
     
     # pass conv_param to the forward pass for the convolutional layer
     filter_size = W1.shape[2]
@@ -104,7 +146,15 @@ class ThreeLayerConvNet(object):
     # self.bn_params[1] to the forward pass for the second batch normalization #
     # layer, etc.                                                              #
     ############################################################################
-    pass
+    out1, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+    N, F, Hp, Wp = out1.shape
+    out1 = out1.reshape((N, F * Hp * Wp))
+    out2, cache2 = affine_relu_forward(out1, W2, b2)
+    scores, cache3 = affine_forward(out2, W3, b3)
+    
+    # print("out1.shape {0}".format(out1.shape))
+    # print("out2.shape {0}".format(out2.shape))
+    # print("scores.shape {0}".format(scores.shape))
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -112,18 +162,30 @@ class ThreeLayerConvNet(object):
     if y is None:
       return scores
     
-    loss, grads = 0, {}
+    
+    loss, grads = softmax_loss(scores, y)
+    loss += 0.5 * self.reg * np.sum(W1**2)
+    loss += 0.5 * self.reg * np.sum(W2**2)
+    loss += 0.5 * self.reg * np.sum(W3**2)
+    
     ############################################################################
     # TODO: Implement the backward pass for the three-layer convolutional net, #
     # storing the loss and gradients in the loss and grads variables. Compute  #
     # data loss using softmax, and make sure that grads[k] holds the gradients #
     # for self.params[k]. Don't forget to add L2 regularization!               #
     ############################################################################
-    pass
+    dh3, dw3, db3 = affine_backward(grads, cache3)
+    dh2, dw2, db2 = affine_relu_backward(dh3, cache2)
+    dh2 = dh2.reshape(N, F, Hp, Wp)
+    dh1, dw1, db1 = conv_relu_pool_backward(dh2, cache1)
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
-    
+    grads = {
+        "W1": dw1 + self.reg * W1, "b1": db1,
+        "W2": dw2 + self.reg * W2, "b2": db2,
+        "W3": dw3 + self.reg * W3, "b3": db3
+    }
     return loss, grads
   
   

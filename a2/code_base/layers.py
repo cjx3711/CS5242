@@ -271,8 +271,8 @@ def conv_backward(dout, cache):
     _, _, DH, DW = dout.shape
     
     dx, dw = np.zeros(x.shape), np.zeros(w.shape)
-    print("dx.shape {0}".format(dx.shape))
-    print("dw.shape {0}".format(dw.shape))
+    # print("dx.shape {0}".format(dx.shape))
+    # print("dw.shape {0}".format(dw.shape))
     
     stride, pad = conv_param['stride'], conv_param['pad']
     padH = pad // 2
@@ -283,8 +283,8 @@ def conv_backward(dout, cache):
     pDX = np.zeros((N, C, H + pad, W + pad))
     conv = np.reshape(w, (F, kernelSize))
     
-    print("pDX.shape {0}".format(pDX.shape))
-    print("conv.shape {0}".format(conv.shape))
+    # print("pDX.shape {0}".format(pDX.shape))
+    # print("conv.shape {0}".format(conv.shape))
     
     pX = np.pad(x, ((0, 0), (0, 0), (padH, padH), (padH, padH)), mode='constant') # Pad zeros only on the H and W axis
         
