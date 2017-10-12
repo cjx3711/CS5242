@@ -329,7 +329,7 @@ def max_pool_forward(x, pool_param):
       - 'stride': The distance between adjacent pooling regions
 
     Returns a tuple of:
-    - out: Output data
+    - out: Output data, of shape(N, C, oH, oW)
     - cache: (x, pool_param)
     """
     out = None
@@ -380,7 +380,7 @@ def max_pool_backward(dout, cache):
 
     oW = int((W - pool_width) / stride) + 1
     oH = int((H - pool_height) / stride) + 1
-
+    print(x.shape)
     dx = np.zeros((N, C, H, W))
     
     for hI in range(oH):
@@ -393,10 +393,15 @@ def max_pool_backward(dout, cache):
             doutCol = dout[:, :, hI, wI].reshape(N*C)
             viewCol = x[:, :, fromH:tillH, fromW:tillW].reshape((N * C, pool_height*pool_width))
             dxViewCol = dx[:, :, fromH:tillH, fromW:tillW].reshape((N * C, pool_height*pool_width)).T
-
-            pos = np.argmax(viewCol, axis=1)
-
+            
+            # viewCol, of shape (N*C, pool_height * pool_width)
+            pos = np.argmax(viewCol, axis=1) # Get the cell that was used for the max pooling
+            # print(dx.shape)
+            # print(dxViewCol.shape)
+            # print(pos.shape)
             dxViewCol[pos, range(N * C)] += doutCol
+            # print(dxViewCol)
+            # print(dxViewCol[pos, range(N * C)])
 
             dxView = dxViewCol.T.reshape(N, C, pool_height, pool_width)
             dx[:, :, fromH:tillH, fromW:tillW] += dxView
