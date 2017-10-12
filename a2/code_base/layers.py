@@ -380,7 +380,7 @@ def max_pool_backward(dout, cache):
 
     oW = int((W - pool_width) / stride) + 1
     oH = int((H - pool_height) / stride) + 1
-    print(x.shape)
+    # print(x.shape)
     dx = np.zeros((N, C, H, W))
     
     for hI in range(oH):
