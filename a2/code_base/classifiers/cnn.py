@@ -48,8 +48,8 @@ class ThreeLayerConvNet(object):
     w1Shape = (F, C, filter_size, filter_size) 
     w1 = np.random.randn(np.product(w1Shape)).reshape(w1Shape) * weight_scale
     b1 = np.zeros((F,))
-    print(w1.shape)
-    print(b1.shape)
+    # print(w1.shape)
+    # print(b1.shape)
     pad = (filter_size - 1)
     Hc = 1 + (H + pad - filter_size) # / stride (assume stride = 1)
     Wc = 1 + (W + pad - filter_size) # / stride (assume stride = 1)
@@ -147,10 +147,16 @@ class ThreeLayerConvNet(object):
     # layer, etc.                                                              #
     ############################################################################
     out1, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+    if self.use_dropout:
+        out1, dcache1 = dropout_forward(out1, self.dropout_param)
     N, F, Hp, Wp = out1.shape
     out1 = out1.reshape((N, F * Hp * Wp))
     out2, cache2 = affine_relu_forward(out1, W2, b2)
+    if self.use_dropout:
+        out2, dcache2 = dropout_forward(out2, self.dropout_param)
     scores, cache3 = affine_forward(out2, W3, b3)
+    if self.use_dropout:
+        scores, dcache3 = dropout_forward(scores, self.dropout_param)
     
     # print("out1.shape {0}".format(out1.shape))
     # print("out2.shape {0}".format(out2.shape))
@@ -174,9 +180,15 @@ class ThreeLayerConvNet(object):
     # data loss using softmax, and make sure that grads[k] holds the gradients #
     # for self.params[k]. Don't forget to add L2 regularization!               #
     ############################################################################
+    if self.use_dropout:
+        grads = dropout_backward(grads, dcache3)
     dh3, dw3, db3 = affine_backward(grads, cache3)
+    if self.use_dropout:
+        dh3 = dropout_backward(dh3, dcache2)
     dh2, dw2, db2 = affine_relu_backward(dh3, cache2)
     dh2 = dh2.reshape(N, F, Hp, Wp)
+    if self.use_dropout:
+        dh2 = dropout_backward(dh2, dcache1)
     dh1, dw1, db1 = conv_relu_pool_backward(dh2, cache1)
     ############################################################################
     #                             END OF YOUR CODE                             #
