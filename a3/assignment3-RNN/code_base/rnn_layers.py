@@ -162,13 +162,21 @@ def rnn_forward(x, h0, Wx, Wh, b):
     - h: Hidden states for the entire timeseries, of shape (N, T, H).
     - cache: Values needed in the backward pass
     """
-    h, cache = None, None
+    h, cache = None, []
+    _, H = h0.shape
+    N, T, D = x.shape
+    h = np.zeros((N, T, H))
     ##############################################################################
     # TODO: Implement forward pass for a vanilla RNN running on a sequence of    #
     # input data. You should use the rnn_step_forward function that you defined  #
     # above. You can use a for loop to help compute the forward pass.            #
     ##############################################################################
-    pass
+    prev_h = h0
+    for i in range(T):
+        th, tcache = rnn_step_forward(x[:, i, :], prev_h, Wx, Wh, b)
+        prev_h = th
+        h[:, i, :] = th
+        cache.append(tcache)
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
@@ -189,13 +197,29 @@ def rnn_backward(dh, cache):
     - dWh: Gradient of hidden-to-hidden weights, of shape (H, H)
     - db: Gradient of biases, of shape (H,)
     """
-    dx, dh0, dWx, dWh, db = None, None, None, None, None
+    
+    N, T, H = dh.shape
+    D = cache[0][0].shape[1]
+    dx = np.zeros((N, T, D))
+    dh0 = np.zeros((N, H))
+    dWx = np.zeros((D, H))
+    dWh = np.zeros((H, H))
+    db = np.zeros((H))
+    tdprev_h = np.zeros((N, H))
+    
     ##############################################################################
     # TODO: Implement the backward pass for a vanilla RNN running an entire      #
     # sequence of data. You should use the rnn_step_backward function that you   #
     # defined above. You can use a for loop to help compute the backward pass.   #
     ##############################################################################
-    pass
+    for i in range(T - 1, -1, -1):
+        tdx, tdprev_h, tdWx, tdWh, tdb = rnn_step_backward(
+            dh[:, i, :] + tdprev_h, cache[i])
+        dx[:, i, :] = tdx
+        dWx += tdWx
+        dWh += tdWh
+        db += tdb
+    dh0 = tdprev_h
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
