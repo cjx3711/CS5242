@@ -35,6 +35,8 @@ class SentimentAnalysisRNN(object):
         - dtype: numpy datatype to use; use float32 for training and float64 for
           numeric gradient checking.
         """
+        
+        print("Init Model")
         if cell_type not in {'rnn'}:
             raise ValueError('Invalid cell_type "%s"' % cell_type)
 
@@ -97,6 +99,8 @@ class SentimentAnalysisRNN(object):
         N, T, V = wordvecs.shape
         H = self.params['Wh'].shape[0]
         h0 = np.zeros((N, H))
+        
+        print("N: {0}, T: {1}, H: {2}, V: {3}".format(N, T, H, V))
 
         # Input-to-hidden, hidden-to-hidden, and biases for normal RNN
         Wx, Wh, b = self.params['Wx'], self.params['Wh'], self.params['b']
@@ -135,7 +139,26 @@ class SentimentAnalysisRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        pass
+        h, cache = rnn_forward(wordvecs, h0, Wx, Wh, b)
+        print("h.shape: {0}".format(h.shape))
+        print("W_a.shape: {0}".format(W_a.shape))
+        ta_out, ta_cache = temporal_affine_forward(h, W_a, b_a)
+        print("ta_out.shape: {0}".format(ta_out.shape))
+        A = ta_out.shape[2]
+        print("A: {0}".format(A))
+        av_out, av_cache = average_forward(ta_out, mask)
+        # ta_avg = np.average(ta_out, axis=1)
+        print("av_out.shape: {0}".format(av_out.shape))
+        print("mask.shape: {0}".format(mask.shape))
+        print(av_out)
+        print(mask)
+        
+        a_out, a_cache = affine_forward(av_out, W_fc, b_fc)
+        print("W_fc.shape: {0}".format(W_fc.shape))
+        print("a_out.shape: {0}".format(a_out.shape))
+        
+        loss, grads = softmax_loss(a_out, labels)
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################

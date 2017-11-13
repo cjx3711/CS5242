@@ -165,6 +165,7 @@ def rnn_forward(x, h0, Wx, Wh, b):
     h, cache = None, []
     _, H = h0.shape
     N, T, D = x.shape
+    
     h = np.zeros((N, T, H))
     ##############################################################################
     # TODO: Implement forward pass for a vanilla RNN running on a sequence of    #
