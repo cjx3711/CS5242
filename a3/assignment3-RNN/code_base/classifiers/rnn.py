@@ -146,7 +146,7 @@ class SentimentAnalysisRNN(object):
         # print("W_a.shape: {0}".format(W_a.shape))
         ta_out, ta_cache = temporal_affine_forward(rnn_h, W_a, b_a)
         # print("ta_out.shape: {0}".format(ta_out.shape))
-        A = ta_out.shape[2]
+        # A = ta_out.shape[2]
         # print("A: {0}".format(A))
         av_out, av_cache = average_forward(ta_out, mask)
         # print("av_out.shape: {0}".format(av_out.shape))
@@ -219,6 +219,10 @@ class SentimentAnalysisRNN(object):
         W_a, b_a = self.params['W_a'], self.params['b_a']
         W_fc, b_fc = self.params['W_fc'], self.params['b_fc']
 
+        N, T, V = wordvecs.shape
+        H = self.params['Wh'].shape[0]
+        h0 = np.zeros((N, H))
+    
         ############################################################################
         # TODO: Implement test-time sampling for the model. At each timestep you   #
         #  will need to do the following for only the forward pass:                #
@@ -242,7 +246,16 @@ class SentimentAnalysisRNN(object):
         # rnn_step_forward and rnn_step_backward functions, not here.              #
         #                                                                          #
         ############################################################################
-        pass
+        
+        # Forward prop
+        rnn_h, rnn_cache = rnn_forward(wordvecs, h0, Wx, Wh, b)
+        ta_out, ta_cache = temporal_affine_forward(rnn_h, W_a, b_a)
+        av_out, av_cache = average_forward(ta_out, mask)
+        a_out, a_cache = affine_forward(av_out, W_fc, b_fc)
+        preds = softmax(a_out)
+        print("preds.shape: {0}".format(preds.shape))
+        
+        
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
