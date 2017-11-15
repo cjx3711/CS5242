@@ -34,7 +34,8 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     # hidden state and any values you need for the backward pass in the next_h   #
     # and cache variables respectively.                                          #
     ##############################################################################
-    next_h = np.tanh(np.dot(x, Wx) + np.dot(prev_h, Wh) + b)
+    result = np.dot(x, Wx) + np.dot(prev_h, Wh) + b
+    next_h = np.tanh(result)
     cache = (x, prev_h, Wx, Wh, next_h)
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -66,11 +67,22 @@ def rnn_step_backward(dnext_h, cache):
     ##############################################################################
     x, prev_h, Wx, Wh, next_h = cache
     dout_dnext_h = dnext_h * (1 - np.power(next_h, 2))
+    
     dx = dout_dnext_h.dot(Wx.T)
+    print("dx.shape: {0}".format(dx.shape))
+    
     dprev_h = dout_dnext_h.dot(Wh.T)
+    print("dprev_h.shape: {0}".format(dprev_h.shape))
+    
     dWx = x.T.dot(dout_dnext_h)
+    print("dWx.shape: {0}".format(dWx.shape))
+    
     dWh = prev_h.T.dot(dout_dnext_h)
+    print("dWh.shape: {0}".format(dWh.shape))
+    
     db = dout_dnext_h.sum(axis=0)
+    print("db.shape: {0}".format(db.shape))
+    
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
