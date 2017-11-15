@@ -36,7 +36,7 @@ class SentimentAnalysisRNN(object):
           numeric gradient checking.
         """
         
-        print("Init Model")
+        # print("Init Model")
         if cell_type not in {'rnn'}:
             raise ValueError('Invalid cell_type "%s"' % cell_type)
 
@@ -100,7 +100,7 @@ class SentimentAnalysisRNN(object):
         H = self.params['Wh'].shape[0]
         h0 = np.zeros((N, H))
         
-        print("N: {0}, T: {1}, H: {2}, V: {3}".format(N, T, H, V))
+        # print("N: {0}, T: {1}, H: {2}, V: {3}".format(N, T, H, V))
 
         # Input-to-hidden, hidden-to-hidden, and biases for normal RNN
         Wx, Wh, b = self.params['Wx'], self.params['Wh'], self.params['b']
@@ -139,25 +139,55 @@ class SentimentAnalysisRNN(object):
         # defined above to store loss and gradients; grads[k] should give the      #
         # gradients for self.params[k].                                            #
         ############################################################################
-        h, cache = rnn_forward(wordvecs, h0, Wx, Wh, b)
-        print("h.shape: {0}".format(h.shape))
-        print("W_a.shape: {0}".format(W_a.shape))
-        ta_out, ta_cache = temporal_affine_forward(h, W_a, b_a)
-        print("ta_out.shape: {0}".format(ta_out.shape))
+        
+        # Forward prop
+        rnn_h, rnn_cache = rnn_forward(wordvecs, h0, Wx, Wh, b)
+        # print("h.shape: {0}".format(h.shape))
+        # print("W_a.shape: {0}".format(W_a.shape))
+        ta_out, ta_cache = temporal_affine_forward(rnn_h, W_a, b_a)
+        # print("ta_out.shape: {0}".format(ta_out.shape))
         A = ta_out.shape[2]
-        print("A: {0}".format(A))
+        # print("A: {0}".format(A))
         av_out, av_cache = average_forward(ta_out, mask)
-        # ta_avg = np.average(ta_out, axis=1)
-        print("av_out.shape: {0}".format(av_out.shape))
-        print("mask.shape: {0}".format(mask.shape))
-        print(av_out)
-        print(mask)
+        # print("av_out.shape: {0}".format(av_out.shape))
+        # print("mask.shape: {0}".format(mask.shape))
+        # print(av_out)
+        # print(mask)
         
         a_out, a_cache = affine_forward(av_out, W_fc, b_fc)
-        print("W_fc.shape: {0}".format(W_fc.shape))
-        print("a_out.shape: {0}".format(a_out.shape))
+        # print("W_fc.shape: {0}".format(W_fc.shape))
+        # print("a_out.shape: {0}".format(a_out.shape))
         
         loss, grads = softmax_loss(a_out, labels)
+        
+        # Back prop
+        # print("grads.shape: {0}".format(grads.shape))
+        
+        a_dx, a_dw, a_db = affine_backward(grads, a_cache)
+        
+        # print("a_dx.shape: {0}".format(a_dx.shape))
+        # print("a_dw.shape: {0}".format(a_dw.shape))
+        # print("a_db.shape: {0}".format(a_db.shape))
+        
+        av_dhi = average_backward(a_dx, av_cache)
+        
+        # print("av_dhi.shape: {0}".format(av_dhi.shape))
+        
+        ta_dx, ta_dw, ta_db = temporal_affine_backward(av_dhi, ta_cache)
+        
+        # print("ta_dx.shape: {0}".format(ta_dx.shape))
+        # print("ta_dw.shape: {0}".format(ta_dw.shape))
+        # print("ta_db.shape: {0}".format(ta_db.shape))
+        
+        dx, dh0, dWx, dWh, db = rnn_backward(ta_dx, rnn_cache)
+        
+        # print("grads.shape: {0}".format(grads.shape))
+        
+        grads = {
+            'Wx': dWx, 'Wh': dWh, 'b': db,
+            'W_a': ta_dw, 'b_a': ta_db,
+            'W_fc': a_dw, 'b_fc': a_db
+        }
         
         ############################################################################
         #                             END OF YOUR CODE                             #
